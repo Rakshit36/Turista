@@ -37,33 +37,34 @@ function CreateTrip() {
     console.log("Form Data:", formData);
   }, [formData]);
 
-  
-
   const onGenerateTrip = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
-    console.log(user)
+    console.log(user);
+    
     if (!user) {
       setOpenDialog(true);
       return;
     }
-
+  
     if (!formData?.location || !formData?.noOfDays || !formData?.traveler || !formData?.budget) {
       toast("Please fill all details or check your data");
       return;
     }
-
+  
     const FINAL_PROMPT = AI_PROMPT
       .replace('{location}', formData?.location)
       .replace('{totalDays}', formData?.noOfDays)
       .replace('{traveler}', formData?.traveler)
       .replace('{budget}', formData?.budget)
       .replace('{totalDays}', formData?.noOfDays);
-
+      
+    console.log(FINAL_PROMPT);
+  
     const result = await chatSession.sendMessage(FINAL_PROMPT);
     const tripDetails = await result?.response?.text();
-
-    // ✅ Save trip data to Firestore
-    await addDoc(collection(db, 'trips'), {
+  
+    // Save trip data to localStorage
+    const tripData = {
       userId: user.uid,
       email: user.email,
       location: formData?.location,
@@ -71,12 +72,18 @@ function CreateTrip() {
       traveler: formData?.traveler,
       budget: formData?.budget,
       generatedTrip: tripDetails,
-      timestamp: new Date()
-    });
-
+      timestamp: new Date(),
+    };
+  
+    localStorage.setItem('generatedTrip', JSON.stringify(tripData)); // Save trip to localStorage
+  
     toast.success("Trip saved successfully!");
     console.log("Trip Data:", tripDetails);
   };
+  
+
+  
+
 
   return (
     <div className="min-h-screen w-screen flex justify-center bg-white pt-10">
