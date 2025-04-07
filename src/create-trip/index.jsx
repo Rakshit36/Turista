@@ -15,8 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import handleGoogleSignIn from "../components/Google_sign"
+import { getFirestore, collection, addDoc, setDoc, doc } from 'firebase/firestore';
+import handleGoogleSignIn, { db } from "../components/Google_sign"
+import { useNavigate } from 'react-router-dom';
+
 
 
 
@@ -25,6 +27,8 @@ function CreateTrip() {
   const [place, setPlace] = useState('');
   const [formData, setFormData] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate =useNavigate();
 
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({
@@ -50,7 +54,7 @@ function CreateTrip() {
       toast("Please fill all details or check your data");
       return;
     }
-  
+    setLoading(true);
     const FINAL_PROMPT = AI_PROMPT
       .replace('{location}', formData?.location)
       .replace('{totalDays}', formData?.noOfDays)
@@ -58,11 +62,12 @@ function CreateTrip() {
       .replace('{budget}', formData?.budget)
       .replace('{totalDays}', formData?.noOfDays);
       
-    console.log(FINAL_PROMPT);
+    //console.log(FINAL_PROMPT);
   
     const result = await chatSession.sendMessage(FINAL_PROMPT);
     const tripDetails = await result?.response?.text();
-  
+    setLoading(false);
+    SaveAiTrip(result?.response?.text());
     // Save trip data to localStorage
     const tripData = {
       userId: user.uid,
@@ -79,6 +84,40 @@ function CreateTrip() {
   
     toast.success("Trip saved successfully!");
     console.log("Trip Data:", tripDetails);
+  };
+  
+  const SaveAiTrip = async (TripData) => {
+    try {
+      setLoading(true);
+      const docId = Date.now().toString();
+      const user = JSON.parse(localStorage.getItem('user'));
+  
+      // Ensure TripData is valid JSON
+      let parsedTrip;
+      try {
+        parsedTrip = JSON.parse(TripData);
+      } catch (e) {
+        toast.error("Trip data is invalid.");
+        console.error("Trip parsing error:", e);
+        setLoading(false);
+        return;
+      }
+  
+      await setDoc(doc(db, "AITrips", docId), {
+        userSelection: formData,
+        tripData: parsedTrip,
+        userEmmail: user?.email,
+        id: docId,
+      });
+  
+      setLoading(false);
+      console.log("Navigating to /view-trip/" + docId);
+      navigate('/view-trip/' + docId);
+    } catch (error) {
+      setLoading(false);
+      toast.error("Failed to save trip");
+      console.error("Error saving trip:", error);
+    }
   };
   
 
@@ -164,10 +203,12 @@ function CreateTrip() {
           </div>
 
          
-          <Button className="bg-blue-700" onClick={localStorage.getItem("user")? onGenerateTrip : handleGoogleSignIn}>Generate Trip</Button>
+          <Button
+          disabled={loading}
+           className="bg-blue-700" onClick={localStorage.getItem("user")? onGenerateTrip : handleGoogleSignIn}>Generate Trip</Button>
           {/* <Button onClick={handleGoogleSignIn}>Sign in with Google</Button> */}
-
-          <Dialog open={openDialog}>
+           
+          {/* <Dialog open={openDialog}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>⚠️ Please Sign In</DialogTitle>
@@ -177,7 +218,7 @@ function CreateTrip() {
                 
               </DialogHeader>
             </DialogContent>
-          </Dialog>
+          </Dialog> */}
         </div>
       </div>
     </div>

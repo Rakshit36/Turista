@@ -3,17 +3,22 @@ import { initializeApp } from 'firebase/app';
 import { toast } from 'sonner';
 import { getFirestore } from 'firebase/firestore';
 
+
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: "turista-66072.firebasestorage.app",
+    messagingSenderId: "637452293587",
+    appId: "1:637452293587:web:c932a73ef04a866ee04b26",
+    measurementId: "G-4HMZ36MHJQ"
 };
 console.log("API Key:", import.meta.env.VITE_FIREBASE_API_KEY);
 
 // ✅ Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+//const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // ✅ Force the popup to open in the same tab only
@@ -48,3 +53,4 @@ const handleGoogleSignIn = async () => {
 };
 
 export default handleGoogleSignIn;
+export const db = getFirestore(app);
