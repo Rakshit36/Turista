@@ -106,7 +106,7 @@ function CreateTrip() {
       await setDoc(doc(db, "AITrips", docId), {
         userSelection: formData,
         tripData: parsedTrip,
-        userEmmail: user?.email,
+        userEmail: user?.email,
         id: docId,
       });
   

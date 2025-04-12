@@ -24,6 +24,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-google-autocomplete": "^2.7.4",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.1.5",
     "require": "^0.4.4",
     "sonner": "^2.0.1",
