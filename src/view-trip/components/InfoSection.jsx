@@ -1,10 +1,29 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { IoShareSocialSharp } from "react-icons/io5";
 import { Button } from '@/components/ui/button';
+import { GetPlaceDetails } from '@/service/GlobalApi';
 
 
 function InfoSection({trip}) {
-  console.log(trip?.userSelection?.noOfDays);
+  //console.log(trip?.userSelection?.noOfDays);
+  useEffect(()=>{
+    trip&&GetPlacePhoto();
+  },[trip])
+  const GetPlacePhoto = async () => {
+    const data = {
+      textQuery: trip?.userSelection?.location
+    };
+  
+    try {
+      const result = await GetPlaceDetails(data);
+      console.log('Places response:', result.data);
+      // Assuming you're storing places in state:
+      // setPlaces(result.data.places || []);
+    } catch (error) {
+      console.error('API ERROR:', error?.response?.data || error.message);
+    }
+  };
+  
   
   return (
     <div >

@@ -13,22 +13,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, setDoc, doc } from 'firebase/firestore';
-import handleGoogleSignIn, { db } from "../components/Google_sign"
 import { useNavigate } from 'react-router-dom';
-
-
-
-
+import handleGoogleSignIn, { db } from "../components/Google_sign";
+import { setDoc, doc } from 'firebase/firestore';
+import Loader from '@/components/Loader';
 
 function CreateTrip() {
   const [place, setPlace] = useState('');
   const [formData, setFormData] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate =useNavigate();
+  const navigate = useNavigate();
+
 
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({
@@ -43,32 +39,32 @@ function CreateTrip() {
 
   const onGenerateTrip = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
-    console.log(user);
     
     if (!user) {
       setOpenDialog(true);
       return;
     }
-  
+
     if (!formData?.location || !formData?.noOfDays || !formData?.traveler || !formData?.budget) {
       toast("Please fill all details or check your data");
       return;
     }
+
     setLoading(true);
+
     const FINAL_PROMPT = AI_PROMPT
       .replace('{location}', formData?.location)
       .replace('{totalDays}', formData?.noOfDays)
       .replace('{traveler}', formData?.traveler)
       .replace('{budget}', formData?.budget)
       .replace('{totalDays}', formData?.noOfDays);
-      
-    //console.log(FINAL_PROMPT);
-  
+
     const result = await chatSession.sendMessage(FINAL_PROMPT);
     const tripDetails = await result?.response?.text();
+
     setLoading(false);
-    SaveAiTrip(result?.response?.text());
-    // Save trip data to localStorage
+    SaveAiTrip(tripDetails);
+
     const tripData = {
       userId: user.uid,
       email: user.email,
@@ -79,20 +75,19 @@ function CreateTrip() {
       generatedTrip: tripDetails,
       timestamp: new Date(),
     };
-  
-    localStorage.setItem('generatedTrip', JSON.stringify(tripData)); // Save trip to localStorage
-  
+
+    localStorage.setItem('generatedTrip', JSON.stringify(tripData));
+
     toast.success("Trip saved successfully!");
     console.log("Trip Data:", tripDetails);
   };
-  
+
   const SaveAiTrip = async (TripData) => {
     try {
       setLoading(true);
       const docId = Date.now().toString();
       const user = JSON.parse(localStorage.getItem('user'));
-  
-      // Ensure TripData is valid JSON
+
       let parsedTrip;
       try {
         parsedTrip = JSON.parse(TripData);
@@ -102,16 +97,15 @@ function CreateTrip() {
         setLoading(false);
         return;
       }
-  
+
       await setDoc(doc(db, "AITrips", docId), {
         userSelection: formData,
         tripData: parsedTrip,
         userEmail: user?.email,
         id: docId,
       });
-  
+
       setLoading(false);
-      console.log("Navigating to /view-trip/" + docId);
       navigate('/view-trip/' + docId);
     } catch (error) {
       setLoading(false);
@@ -119,20 +113,39 @@ function CreateTrip() {
       console.error("Error saving trip:", error);
     }
   };
-  
-
-  
-
 
   return (
-    <div className="min-h-screen w-screen flex justify-center bg-white pt-10">
-      <div className='w-full max-w-6xl px-5 py-10 bg-white-100 rounded-lg'>
+    <div className="relative min-h-screen w-screen flex justify-center items-start pt-10 overflow-hidden">
+
+      {loading ? <Loader /> :
+      
+      <>
+      
+      {/* Blurred Background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          // backgroundImage: "url('/bg2.jpeg')",
+          backgroundColor: "white",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(10px)",
+          transform: "scale(1.1)"
+        }}
+        
+      ></div>
+
+      {/* Main Content */}
+      <div className='relative z-10 w-full max-w-6xl px-5 py-10 bg-white/90 rounded-lg shadow-lg'>
         <h2 className='font-bold text-3xl text-blue-500'>Tell us your travel preferences 🏕️🌴</h2>
         <p className='mt-3 text-gray-500 text-xl'>
           Just provide basic information, and our trip planner will generate a customized itinerary based on your preferences.
         </p>
 
         <div className='mt-20 flex flex-col gap-9'>
+
+          {/* Destination Input */}
           <div>
             <h2 className='text-xl my-3 font-medium text-blue-500'>What is Your Destination?</h2>
             <GooglePlacesAutocomplete
@@ -146,51 +159,31 @@ function CreateTrip() {
                 setPlace(place.formatted_address);
                 handleInputChange('location', place.formatted_address);
               }}
-              options={{
-                types: ['(cities)'],
-              }}
+              options={{ types: ['(cities)'] }}
             />
           </div>
 
+          {/* Number of Days */}
           <div>
             <h2 className='text-xl my-3 font-medium text-blue-500 '>How many days are you planning your trip?</h2>
             <input
               type="number"
               placeholder='Ex: 3'
               className='w-full border-2 border-blue-400 rounded-lg p-2 text-lg bg-blue-200 text-blue-600'
-              onChange={(e) => handleInputChange('noOfDays', e.target.value)} 
+              onChange={(e) => handleInputChange('noOfDays', e.target.value)}
             />
           </div>
-                    {/* Travel Companion Selection */}
-                    <div>
+
+          {/* Travel Companion Selection */}
+          <div>
             <h2 className='text-xl my-3 font-medium text-blue-600'>Who do you plan on traveling with on your next adventure?</h2>
             <div className='grid grid-cols-3 gap-5 mt-5 cursor-pointer text-blue-700'>
               {SelectTravelsList.map((item, index) => (
-                <div key={index} 
-                     className={`p-4 border-2 border-blue-300 rounded-lg hover:shadow-lg cursor-pointer ${
-                       formData?.traveler === item.people ? "shadow-lg border-black" : ""
-                     }`}
-                     onClick={() => handleInputChange('traveler', item.people)} // ✅ Saves selection
-                >
-                  <h2 className='text-4xl'>{item.icon}</h2>
-                  <div>
-                    <h3 className='text-lg font-bold'>{item.title}</h3>
-                    <p className='text-gray-500'>{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-                    {/* Budget Selection */}
-                    <div>
-            <h2 className='cursor-pointer text-xl my-3 font-medium text-blue-600'>What is your Budget?</h2>
-            <div className='grid grid-cols-3 gap-5 mt-5 text-blue-700'>
-              {SelectBudgetOptions.map((item, index) => (
-                <div key={index} 
-                     className={`p-4 border rounded-lg hover:shadow-lg cursor-pointer ${
-                       formData?.budget === item.title ? "shadow-lg border-black" : ""
-                     }`}
-                     onClick={() => handleInputChange('budget', item.title)} // ✅ Stores selected budget
+                <div key={index}
+                  className={`p-4 border-2 border-blue-300 rounded-lg hover:shadow-lg cursor-pointer ${
+                    formData?.traveler === item.people ? "shadow-lg border-black" : ""
+                  }`}
+                  onClick={() => handleInputChange('traveler', item.people)}
                 >
                   <h2 className='text-4xl'>{item.icon}</h2>
                   <div>
@@ -202,25 +195,42 @@ function CreateTrip() {
             </div>
           </div>
 
-         
+          {/* Budget Selection */}
+          <div>
+            <h2 className='cursor-pointer text-xl my-3 font-medium text-blue-600'>What is your Budget?</h2>
+            <div className='grid grid-cols-3 gap-5 mt-5 text-blue-700'>
+              {SelectBudgetOptions.map((item, index) => (
+                <div key={index}
+                  className={`p-4 border rounded-lg hover:shadow-lg cursor-pointer ${
+                    formData?.budget === item.title ? "shadow-lg border-black" : ""
+                  }`}
+                  onClick={() => handleInputChange('budget', item.title)}
+                >
+                  <h2 className='text-4xl'>{item.icon}</h2>
+                  <div>
+                    <h3 className='text-lg font-bold'>{item.title}</h3>
+                    <p className='text-gray-500'>{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Generate Trip Button */}
           <Button
-          disabled={loading}
-           className="bg-blue-700" onClick={localStorage.getItem("user")? onGenerateTrip : handleGoogleSignIn}>Generate Trip</Button>
-          {/* <Button onClick={handleGoogleSignIn}>Sign in with Google</Button> */}
-           
-          {/* <Dialog open={openDialog}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>⚠️ Please Sign In</DialogTitle>
-                <DialogDescription>
-                  🚀 You need to sign in to generate your trip.
-                </DialogDescription>
-                
-              </DialogHeader>
-            </DialogContent>
-          </Dialog> */}
+            disabled={loading}
+            className="bg-blue-700"
+            onClick={localStorage.getItem("user") ? onGenerateTrip : handleGoogleSignIn}
+          >
+            Generate Trip
+          </Button>
+
         </div>
       </div>
+
+      </>
+    }
+   
     </div>
   );
 }
