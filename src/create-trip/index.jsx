@@ -24,47 +24,36 @@ function CreateTrip() {
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
   };
-
   useEffect(() => {
     console.log("Form Data:", formData);
   }, [formData]);
-
   const onGenerateTrip = async () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    
+    const user = JSON.parse(localStorage.getItem('user'));    
     if (!user) {
       setOpenDialog(true);
       return;
     }
-
     if (!formData?.location || !formData?.noOfDays || !formData?.traveler || !formData?.budget) {
       toast("Please fill all details or check your data");
       return;
     }
-
     setLoading(true);
-
-    const FINAL_PROMPT = AI_PROMPT
+      const FINAL_PROMPT = AI_PROMPT
       .replace('{location}', formData?.location)
       .replace('{totalDays}', formData?.noOfDays)
       .replace('{traveler}', formData?.traveler)
       .replace('{budget}', formData?.budget)
       .replace('{totalDays}', formData?.noOfDays);
-
     const result = await chatSession.sendMessage(FINAL_PROMPT);
     const tripDetails = await result?.response?.text();
-
     setLoading(false);
     SaveAiTrip(tripDetails);
-
     const tripData = {
       userId: user.uid,
       email: user.email,
@@ -75,13 +64,10 @@ function CreateTrip() {
       generatedTrip: tripDetails,
       timestamp: new Date(),
     };
-
     localStorage.setItem('generatedTrip', JSON.stringify(tripData));
-
     toast.success("Trip saved successfully!");
     console.log("Trip Data:", tripDetails);
   };
-
   const SaveAiTrip = async (TripData) => {
     try {
       setLoading(true);
@@ -97,14 +83,12 @@ function CreateTrip() {
         setLoading(false);
         return;
       }
-
       await setDoc(doc(db, "AITrips", docId), {
         userSelection: formData,
         tripData: parsedTrip,
         userEmail: user?.email,
         id: docId,
       });
-
       setLoading(false);
       navigate('/view-trip/' + docId);
     } catch (error) {
@@ -113,38 +97,30 @@ function CreateTrip() {
       console.error("Error saving trip:", error);
     }
   };
-
   return (
     <div className="relative min-h-screen w-screen flex justify-center items-start pt-10 overflow-hidden">
-
-      {loading ? <Loader /> :
-      
-      <>
-      
+      {loading ? <Loader/> :
+      <>      
       {/* Blurred Background */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          // backgroundImage: "url('/bg2.jpeg')",
+          // backgroundImage:"url('/bg2.jpeg')",
           backgroundColor: "white",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: "blur(10px)",
           transform: "scale(1.1)"
-        }}
-        
+        }}       
       ></div>
-
       {/* Main Content */}
       <div className='relative z-10 w-full max-w-6xl px-5 py-10 bg-white/90 rounded-lg shadow-lg'>
         <h2 className='font-bold text-3xl text-blue-500'>Tell us your travel preferences 🏕️🌴</h2>
         <p className='mt-3 text-gray-500 text-xl'>
           Just provide basic information, and our trip planner will generate a customized itinerary based on your preferences.
         </p>
-
         <div className='mt-20 flex flex-col gap-9'>
-
           {/* Destination Input */}
           <div>
             <h2 className='text-xl my-3 font-medium text-blue-500'>What is Your Destination?</h2>
@@ -162,7 +138,6 @@ function CreateTrip() {
               options={{ types: ['(cities)'] }}
             />
           </div>
-
           {/* Number of Days */}
           <div>
             <h2 className='text-xl my-3 font-medium text-blue-500 '>How many days are you planning your trip?</h2>
@@ -173,7 +148,6 @@ function CreateTrip() {
               onChange={(e) => handleInputChange('noOfDays', e.target.value)}
             />
           </div>
-
           {/* Travel Companion Selection */}
           <div>
             <h2 className='text-xl my-3 font-medium text-blue-600'>Who do you plan on traveling with on your next adventure?</h2>
@@ -194,7 +168,6 @@ function CreateTrip() {
               ))}
             </div>
           </div>
-
           {/* Budget Selection */}
           <div>
             <h2 className='cursor-pointer text-xl my-3 font-medium text-blue-600'>What is your Budget?</h2>
@@ -215,24 +188,20 @@ function CreateTrip() {
               ))}
             </div>
           </div>
-
           {/* Generate Trip Button */}
           <Button
+            type="button"
             disabled={loading}
             className="bg-blue-700"
             onClick={localStorage.getItem("user") ? onGenerateTrip : handleGoogleSignIn}
           >
             Generate Trip
           </Button>
-
         </div>
       </div>
-
       </>
-    }
-   
+    }   
     </div>
   );
 }
-
 export default CreateTrip;

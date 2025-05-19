@@ -33,7 +33,7 @@ function Hero() {
 
         <Link to={'/create-trip'}>
           <Button className="bg-blue-600 text-white px-6 py-3 rounded-lg text-lg">
-            Get Started, It's Free
+            Get Started
           </Button>
         </Link>
       </div>
